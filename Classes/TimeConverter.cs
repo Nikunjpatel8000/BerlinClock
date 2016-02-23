@@ -1,76 +1,79 @@
-﻿using System;
+﻿using BerlinClock.Classes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace BerlinClock
 {
-    public class TimeConverter : ITimeConverter
+    public sealed class TimeConverter : ITimeConverter
     {
         private const int SecondsPartIndex = 2;
         private const int MinutesPartIndex = 1;
         private const int HoursPartIndex = 0;
         private const int TotalParts = 3;
-
+        private const string OffSign = "O";
+        private const string YellowBulb = "Y";
+        private const string RedBulb = "R";
+        
         public string convertTime(string aTime)
         {
             var timeArray = aTime.Split(':');
             if (timeArray.Length != TotalParts)
                 throw new ArgumentException("three part argument required e.g. 10:20:10");
 
-            int[] parts = timeArray.Select(x => int.Parse(x)).ToArray();
+            int[] timeparts = timeArray.Select(int.Parse).ToArray();
 
-            if (parts[HoursPartIndex] > 24 && parts[HoursPartIndex] < 0)
-                throw new ArgumentException("hour part of aTime must be between 0 and 24.");
+            if (timeparts[HoursPartIndex] > Hour.Max && timeparts[HoursPartIndex] < Hour.Min)
+                throw new ArgumentException(string.Format("hour part of aTime must be between {0} and {1}.", Hour.Max, Hour.Min));
 
-            if (parts[MinutesPartIndex] > 60 && parts[MinutesPartIndex] < 0)
-                throw new ArgumentException("minute part of aTime must be between 0 and 60.");
+            if (timeparts[MinutesPartIndex] > Minute.Max && timeparts[MinutesPartIndex] < Minute.Min)
+                throw new ArgumentException(string.Format("minute part of aTime must be between {0} and {1}.", Minute.Max, Minute.Min));
 
-            if (parts[SecondsPartIndex] > 60 && parts[SecondsPartIndex] < 0)
-                throw new ArgumentException("second part of aTime must be between 0 and 60.");
+            if (timeparts[SecondsPartIndex] > Second.Max && timeparts[SecondsPartIndex] < Second.Min)
+                throw new ArgumentException(string.Format("second part of aTime must be between {0} and {1}.", Second.Max, Second.Min));
 
             var builder = new StringBuilder();
-            builder.Append(GetSecondsPart(parts[SecondsPartIndex]))
+            builder.Append(GetSecondsPart(timeparts[SecondsPartIndex]))
             .AppendLine()
-            .Append(GetTopHoursPart(parts[HoursPartIndex]))
+            .Append(GetTopHoursPart(timeparts[HoursPartIndex]))
             .AppendLine()
-            .Append(GetBottomHoursPart(parts[HoursPartIndex]))
+            .Append(GetBottomHoursPart(timeparts[HoursPartIndex]))
             .AppendLine()
-            .Append(GetTopMinutesPart(parts[MinutesPartIndex]))
+            .Append(GetTopMinutesPart(timeparts[MinutesPartIndex]))
             .AppendLine()
-            .Append(GetBottomMinutesPart(parts[MinutesPartIndex]));
+            .Append(GetBottomMinutesPart(timeparts[MinutesPartIndex]));
             return builder.ToString();        
         }
 
-        protected string GetSecondsPart(int number)
+        private string GetSecondsPart(int number)
         {
-            if (number % 2 == 0) return "Y";
-            else return "O";
+            return number % 2 == 0 ? YellowBulb : OffSign;
         }
 
-        protected string GetTopHoursPart(int number)
+        private string GetTopHoursPart(int number)
         {
             return GetOnOff(4, GetTopNumberOfOnSigns(number));
         }
 
-        protected string GetBottomHoursPart(int number)
+        private string GetBottomHoursPart(int number)
         {
             return GetOnOff(4, number % 5);
         }
 
-        protected string GetTopMinutesPart(int number)
+        private string GetTopMinutesPart(int number)
         {
-            return GetOnOff(11, GetTopNumberOfOnSigns(number), "Y").Replace("YYY", "YYR");
+            return GetOnOff(11, GetTopNumberOfOnSigns(number), YellowBulb).Replace("YYY", "YYR");
         }
 
-        protected string GetBottomMinutesPart(int number)
+        private string GetBottomMinutesPart(int number)
         {
-            return GetOnOff(4, number % 5, "Y");
+            return GetOnOff(4, number % 5, YellowBulb);
         }
 
         private string GetOnOff(int lamps, int onSigns)
         {
-            return GetOnOff(lamps, onSigns, "R");
+            return GetOnOff(lamps, onSigns, RedBulb);
         }
         private string GetOnOff(int lamps, int onSigns, String onSign)
         {
@@ -81,7 +84,7 @@ namespace BerlinClock
             }
             for (int i = 0; i < (lamps - onSigns); i++)
             {
-                builder.Append("O");
+                builder.Append(OffSign);
             }
             return builder.ToString();
         }
